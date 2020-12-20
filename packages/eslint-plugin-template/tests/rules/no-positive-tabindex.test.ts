@@ -19,11 +19,11 @@ const messageId: MessageIds = 'noPositiveTabindex';
 
 ruleTester.run(RULE_NAME, rule, {
   valid: [
-    `<span tabindex="-1"></span>`,
-    `<span tabindex="0"></span>`,
-    `<span [attr.tabindex]="-1"></span>`,
-    `<span [attr.tabindex]="0"></span>`,
-    `<span [attr.tabindex]="tabIndex"></span>`,
+    '<span tabindex="-1"></span>',
+    '<span tabindex="0"></span>',
+    '<span [attr.tabindex]="-1"></span>',
+    '<span [attr.tabindex]="0"></span>',
+    '<span [attr.tabindex]="tabIndex"></span>',
   ],
   invalid: [
     convertAnnotatedSourceToFailureCase({

@@ -60,8 +60,8 @@ ruleTester.run(RULE_NAME, rule, {
       messageId,
       description: 'should fail when area does not have alt or label text',
       annotatedSource: `
-        <area />
-        ~~~~~~~~
+        <area>
+        ~~~~~~
       `,
     }),
     convertAnnotatedSourceToFailureCase({
