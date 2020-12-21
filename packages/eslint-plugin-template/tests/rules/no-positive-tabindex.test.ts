@@ -30,7 +30,7 @@ ruleTester.run(RULE_NAME, rule, {
       description: 'should fail when tabindex attr is positive',
       annotatedSource: `
         <div tabindex="5"></div>
-        ~~~~~~~~~~~~~~~~~~
+             ~~~~~~~~~~~~
       `,
       messageId,
     }),
@@ -38,7 +38,7 @@ ruleTester.run(RULE_NAME, rule, {
       description: 'should fail when tabindex input is positive',
       annotatedSource: `
         <div [attr.tabindex]="1"></div>
-        ~~~~~~~~~~~~~~~~~~~~~~~~~
+             ~~~~~~~~~~~~~~~~~~~
       `,
       messageId,
     }),
