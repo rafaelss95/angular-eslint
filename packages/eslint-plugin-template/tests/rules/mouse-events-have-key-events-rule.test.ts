@@ -16,14 +16,8 @@ const ruleTester = new RuleTester({
 
 ruleTester.run(RULE_NAME, rule, {
   valid: [
-    {
-      filename: 'test.component.html',
-      code: '<div (mouseover)="onMouseOver()" (focus)="onFocus()"></div>',
-    },
-    {
-      filename: 'test.component.html',
-      code: '<div (mouseout)="onMouseOut()" (blur)="onBlur()"></div>',
-    },
+    '<div (mouseover)="onMouseOver()" (focus)="onFocus()"></div>',
+    '<div (mouseout)="onMouseOut()" (blur)="onBlur()"></div>',
   ],
   invalid: [
     convertAnnotatedSourceToFailureCase({
