@@ -1,38 +1,36 @@
+import { Message } from '@angular/compiler/src/i18n/i18n_ast';
+import { Element, Template } from '@angular/compiler/src/render3/r3_ast';
 import {
   createESLintRule,
   getTemplateParserServices,
 } from '../utils/create-eslint-rule';
 
-const TEXT_TYPE_NAMES = ['Text', 'Icu'];
-const ATTRIB_I18N = 'i18n';
-const DEFAULT_IGNORE_ATTRIBUTES = [
+const ATTRIBUTE_I18N = 'i18n';
+const TEXT_TYPE_NAMES: ReadonlySet<string> = new Set(['Text', 'Icu']);
+const DEFAULT_BOUND_TEXT_ALLOWED_PATTERN = /[a-z]/i;
+const DEFAULT_IGNORE_ATTRIBUTES: ReadonlySet<string> = new Set([
+  'charset',
   'class',
-  'style',
   'color',
-  'svgIcon',
+  'colspan',
+  'fill',
+  'formControlName',
+  'height',
   'href',
-  'src',
   'id',
   'lang',
-  'charset',
-  'height',
-  'width',
+  'src',
+  'stroke',
+  'stroke-width',
+  'style',
+  'svgIcon',
+  'tabindex',
   'target',
   'type',
-  'colspan',
-  'uiSref',
-  'uiSrefActive',
-  'ui-view',
-  'xmlns',
-  'stroke-width',
-  'stroke',
-  'fill',
   'viewBox',
-  'tabindex',
-  'formControlName',
-];
-const DEFAULT_IGNORE_TAGS: string[] = [];
-const DEFAULT_BOUND_TEXT_ALLOWED_PATTERN = /[A-Z]/i;
+  'width',
+  'xmlns',
+]);
 
 type Options = [
   {
@@ -44,8 +42,14 @@ type Options = [
     boundTextAllowedPattern?: string;
   },
 ];
-
-const defaultOptions = {
+export type MessageIds =
+  | 'i18nAttribute'
+  | 'i18nId'
+  | 'i18nIdOnAttribute'
+  | 'i18nSuggestIgnore'
+  | 'i18nText';
+export const RULE_NAME = 'i18n';
+const DEFAULT_OPTIONS: Options[0] = {
   checkId: true,
   checkText: true,
   checkAttributes: true,
@@ -53,14 +57,9 @@ const defaultOptions = {
   ignoreTags: [],
   boundTextAllowedPattern: '',
 };
-
-export type MessageIds =
-  | 'i18nId'
-  | 'i18nText'
-  | 'i18nAttrib'
-  | 'i18nIdOnAttrib'
-  | 'i18nSuggestIgnore';
-export const RULE_NAME = 'i18n';
+const STYLE_GUIDE_LINK = 'https://angular.io/guide/i18n';
+const STYLE_GUIDE_I18N_ATTRIBUTE_LINK = `${STYLE_GUIDE_LINK}#translate-attributes`;
+const STYLE_GUIDE_I18N_ATTRIBUTE_ID_LINK = `${STYLE_GUIDE_LINK}#use-a-custom-id-with-a-description`;
 
 export default createESLintRule<Options, MessageIds>({
   name: RULE_NAME,
@@ -72,10 +71,9 @@ export default createESLintRule<Options, MessageIds>({
         'Checks for missing i18n attributes on elements and non-ignored attributes ' +
         'containing text. Can also highlight tags that do not use Custom ID (@@) feature. ' +
         'Default Config = ' +
-        JSON.stringify(defaultOptions),
+        JSON.stringify(DEFAULT_OPTIONS),
       category: 'Best Practices',
       recommended: false,
-      // url: '',  // Not sure why we are excluding this, it is in the docs at eslint
     },
     fixable: 'code',
     schema: [
@@ -92,16 +90,18 @@ export default createESLintRule<Options, MessageIds>({
             type: 'boolean',
           },
           ignoreAttributes: {
-            type: 'array',
             items: {
               type: 'string',
             },
+            type: 'array',
+            uniqueItems: true,
           },
           ignoreTags: {
-            type: 'array',
             items: {
               type: 'string',
             },
+            type: 'array',
+            uniqueItems: true,
           },
           boundTextAllowedPattern: {
             type: 'string',
@@ -111,171 +111,145 @@ export default createESLintRule<Options, MessageIds>({
       },
     ],
     messages: {
-      i18nId:
-        'Missing custom message identifier. ' +
-        'For more information visit https://angular.io/guide/i18n#use-a-custom-id-with-a-description',
-      i18nIdOnAttrib:
-        "Missing custom message identifier on attribute '{{attribName}}'. " +
-        'For more information visit https://angular.io/guide/i18n#use-a-custom-id-with-a-description',
-      i18nText:
-        'Each element containing text node should have an i18n attribute. ' +
-        'See https://angular.io/guide/i18n',
-      i18nAttrib:
-        "Attribute '{{attribName}}' has no corresponding i18n attribute. " +
-        'See https://angular.io/guide/i18n#translate-attributes',
+      i18nAttribute: `Attribute '{{attributeName}}' has no corresponding i18n attribute. See more at ${STYLE_GUIDE_I18N_ATTRIBUTE_LINK}.`,
+      i18nId: `Missing custom message identifier. See more at ${STYLE_GUIDE_I18N_ATTRIBUTE_ID_LINK}.`,
+      i18nIdOnAttribute: `Missing custom message identifier on attribute "{{attributeName}}". See more at ${STYLE_GUIDE_I18N_ATTRIBUTE_ID_LINK}.`,
       i18nSuggestIgnore:
-        "Add the attribute name '{{attribName}}' to the ignoreAttributes option in the eslint config.",
+        'Add the attribute name "{{attributeName}}" to the ignoreAttributes option in the eslint config',
+      i18nText: `Each element containing text node should have an i18n attribute. See more at ${STYLE_GUIDE_LINK}.`,
     },
   },
-  defaultOptions: [defaultOptions],
-  create(context, [options]) {
+  defaultOptions: [DEFAULT_OPTIONS],
+  create(
+    context,
+    [
+      {
+        boundTextAllowedPattern,
+        checkAttributes,
+        checkId,
+        checkText,
+        ignoreAttributes,
+        ignoreTags,
+      },
+    ],
+  ) {
     const parserServices = getTemplateParserServices(context);
     const sourceCode = context.getSourceCode();
-    const {
-      checkId,
-      checkText,
-      checkAttributes,
-      ignoreAttributes,
-      ignoreTags,
-      boundTextAllowedPattern,
-    } = options;
-    const checkIgnoreTags =
-      ignoreTags && ignoreTags.length > 0 ? ignoreTags : DEFAULT_IGNORE_TAGS;
+    const checkIgnoreTags: ReadonlySet<string> = new Set(ignoreTags);
     const checkBoundTextAllowedPattern = boundTextAllowedPattern
       ? new RegExp(boundTextAllowedPattern)
       : DEFAULT_BOUND_TEXT_ALLOWED_PATTERN;
+    const allIgnoredAttributes: ReadonlySet<string> = new Set([
+      ...DEFAULT_IGNORE_ATTRIBUTES,
+      ...(ignoreAttributes ?? []),
+    ]);
 
-    // build a big list of attributes to ignore
-    const allIgnoredAttribs: string[] = [...DEFAULT_IGNORE_ATTRIBUTES];
-    if (ignoreAttributes && ignoreAttributes.length > 0) {
-      allIgnoredAttribs.push(...ignoreAttributes);
-    }
-
-    function isSizeOrNumber(value: string) {
-      let temp = value;
-      if (temp.endsWith('px')) {
-        temp = temp.substr(0, temp.length - 2);
-      }
-      return String(Number(temp)) === String(temp);
-    }
-
-    function checkNode(node: any, name: string): void {
+    function checkNode(node: Element | Template, tagName: string): void {
       const loc = parserServices.convertNodeSourceSpanToLoc(node.sourceSpan);
       const startIndex = sourceCode.getIndexFromLoc(loc.start);
-      let insertIndex = startIndex + 1;
-      insertIndex += name.length;
-      // Check all of the text attributes on the element
-      node.attributes.forEach((attrib: any) => {
-        if (attrib.i18n) {
-          if (checkId && !attrib.i18n.customId) {
-            // i18n attribute does not contain '@@'
-            // see https://angular.io/guide/i18n#use-a-custom-id-with-a-description
+      const insertIndex = startIndex + 1 + tagName.length;
+
+      for (const { i18n, name, value } of node.attributes) {
+        if (i18n) {
+          if (checkId && !(i18n as Message).customId) {
             context.report({
-              messageId: 'i18nIdOnAttrib',
+              messageId: 'i18nIdOnAttribute',
               loc,
-              data: {
-                attribName: attrib.name,
-              },
+              data: { attributeName: name },
             });
           }
-        } else {
-          if (
-            checkAttributes &&
-            attrib.value &&
-            typeof attrib.value === 'string' &&
-            attrib.value.length > 0 &&
-            attrib.value !== 'true' &&
-            attrib.value !== 'false' &&
-            !isSizeOrNumber(attrib.value) &&
-            !attrib.name.startsWith(':xml') &&
-            !allIgnoredAttribs.includes(attrib.name) &&
-            !allIgnoredAttribs.includes(name + '[' + attrib.name + ']')
-          ) {
-            context.report({
-              messageId: 'i18nAttrib',
-              loc,
-              data: {
-                attribName: attrib.name,
-              },
-              fix: (fixer) =>
-                fixer.replaceTextRange(
-                  [insertIndex, insertIndex],
-                  ' ' + ATTRIB_I18N + '-' + attrib.name,
-                ),
-              suggest: [
-                {
-                  messageId: 'i18nSuggestIgnore',
-                  data: {
-                    attribName: attrib.name,
-                  },
-                  // Little bit of a hack,
-                  // but VS code ignores suggestions with no fix!?
-                  fix: (fixer) => fixer.insertTextBeforeRange([0, 0], ''),
-                },
-              ],
-            });
-          }
+
+          continue;
         }
-      });
+
+        const hasInvalidAttribute =
+          checkAttributes &&
+          value &&
+          typeof value === 'string' &&
+          value.length > 0 &&
+          value !== 'true' &&
+          value !== 'false' &&
+          !isSizeOrNumber(value) &&
+          !name.startsWith(':xml') &&
+          !allIgnoredAttributes.has(name) &&
+          !allIgnoredAttributes.has(`${tagName}[${name}]`);
+
+        if (!hasInvalidAttribute) continue;
+
+        context.report({
+          messageId: 'i18nAttribute',
+          loc,
+          data: { attributeName: name },
+          fix: (fixer) =>
+            fixer.replaceTextRange(
+              [insertIndex, insertIndex],
+              ` ${ATTRIBUTE_I18N}-${name}`,
+            ),
+          suggest: [
+            {
+              messageId: 'i18nSuggestIgnore',
+              data: { attributeName: name },
+              // Little bit of a hack as VSCode ignores suggestions with no fix!?
+              fix: (fixer) => fixer.insertTextBeforeRange([0, 0], ''),
+            },
+          ],
+        });
+      }
 
       if (node.i18n) {
-        // if this element already has i18n
-        if (checkId) {
-          if (!node.i18n.customId) {
-            // i18n attribute does not contain '@@'
-            // see https://angular.io/guide/i18n#use-a-custom-id-with-a-description
-            context.report({
-              messageId: 'i18nId',
-              loc,
-            });
-          }
-        }
-      } else {
-        // No i18n attribute here!
-        if (
-          checkText &&
-          (!checkIgnoreTags || checkIgnoreTags.indexOf(node.name) === -1)
-        ) {
-          // Attempted to check for child nodes that also include i18n
-          // however these throw a template parser error before the linter
-          // is allowed to run, so no need!
+        if (!checkId || (node.i18n as Message).customId) return;
 
-          // Need to check the children
-          if (
-            node.children &&
-            node.children.some(
-              (child: any) =>
-                // is type of text node
-                TEXT_TYPE_NAMES.includes(child.type) ||
-                // bound text that has no text
-                (child.type === 'BoundText' &&
-                  checkBoundTextAllowedPattern.test(
-                    child.value.ast.strings.join('').trim(),
-                  )),
-            )
-          ) {
-            // If at least one child is a text node then we probably need i18n
-            context.report({
-              messageId: 'i18nText',
-              loc,
-              fix: (fixer) =>
-                fixer.replaceTextRange(
-                  [insertIndex, insertIndex],
-                  ' ' + ATTRIB_I18N,
-                ),
-            });
-          }
-        }
+        context.report({
+          messageId: 'i18nId',
+          loc,
+        });
+
+        return;
       }
+
+      if (!checkText || checkIgnoreTags.has((node as Element).name)) return;
+
+      /**
+        Attempted to check for child nodes that also include i18n
+        however these throw a template parser error before the linter
+        is allowed to run, so no need!
+       */
+
+      const hasInvalidChild = node.children?.some(
+        ({ type, value }: any) =>
+          TEXT_TYPE_NAMES.has(type) ||
+          (type === 'BoundText' &&
+            checkBoundTextAllowedPattern.test(
+              value.ast.strings.join('').trim(),
+            )),
+      );
+
+      if (!hasInvalidChild) return;
+
+      context.report({
+        messageId: 'i18nText',
+        loc,
+        fix: (fixer) =>
+          fixer.replaceTextRange(
+            [insertIndex, insertIndex],
+            ` ${ATTRIBUTE_I18N}`,
+          ),
+      });
     }
 
-    return parserServices.defineTemplateBodyVisitor({
-      Element(node: any) {
+    return {
+      Element(node: Element) {
         checkNode(node, node.name);
       },
-      Template(node: any) {
+      Template(node: Template) {
         checkNode(node, node.tagName);
       },
-    });
+    };
   },
 });
+
+function isSizeOrNumber(value: string) {
+  const parsedSize = value.replace(/px$/, '');
+
+  return String(Number(parsedSize)) === String(parsedSize);
+}
