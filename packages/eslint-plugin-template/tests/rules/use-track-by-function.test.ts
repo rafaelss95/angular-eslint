@@ -121,14 +121,8 @@ ruleTester.run(RULE_NAME, rule, {
         </ng-template>
       `,
       messages: [
-        {
-          char: '~',
-          messageId,
-        },
-        {
-          char: '^',
-          messageId,
-        },
+        { char: '~', messageId },
+        { char: '^', messageId },
       ],
     }),
   ],

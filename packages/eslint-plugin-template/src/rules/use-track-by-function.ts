@@ -12,7 +12,7 @@ export default createESLintRule<Options, MessageIds>({
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensures trackBy function is used.',
+      description: 'Ensures trackBy function is used',
       category: 'Best Practices',
       recommended: false,
     },
@@ -25,37 +25,30 @@ export default createESLintRule<Options, MessageIds>({
   create(context) {
     const parserServices = getTemplateParserServices(context);
 
-    return parserServices.defineTemplateBodyVisitor({
-      ['BoundAttribute.inputs[name="ngForOf"]'](node: any) {
-        if (
-          node.parent.inputs.some(
-            (attr: { type: string; name: string }) =>
-              attr.type === 'BoundAttribute' && attr.name === 'ngForTrackBy',
-          )
-        ) {
-          return;
-        }
-        const loc = parserServices.convertNodeSourceSpanToLoc(node.sourceSpan);
+    return {
+      'BoundAttribute.inputs[name="ngForOf"]'({
+        parent: { inputs },
+        sourceSpan,
+      }: any) {
+        if (hasNgForTrackBy(inputs)) return;
+
+        const loc = parserServices.convertNodeSourceSpanToLoc(sourceSpan);
+
         context.report({
           messageId: 'useTrackByFunction',
           loc,
         });
       },
-      ['BoundAttribute.templateAttrs[name="ngForOf"]'](node: any) {
-        const attrs = node.parent.templateAttrs;
-        if (
-          attrs.some(
-            (attr: { type: string; name: string }) =>
-              attr.type === 'BoundAttribute' && attr.name === 'ngForTrackBy',
-          )
-        ) {
-          return;
-        }
+      'BoundAttribute.templateAttrs[name="ngForOf"]'({
+        parent: { templateAttrs },
+      }: any) {
+        if (hasNgForTrackBy(templateAttrs)) return;
+
         const start = parserServices.convertNodeSourceSpanToLoc(
-          attrs[0].sourceSpan,
+          templateAttrs[0].sourceSpan,
         ).start;
         const end = parserServices.convertNodeSourceSpanToLoc(
-          attrs[attrs.length - 1].sourceSpan,
+          templateAttrs[templateAttrs.length - 1].sourceSpan,
         ).end;
         const loc = {
           start: {
@@ -66,12 +59,21 @@ export default createESLintRule<Options, MessageIds>({
             ...end,
             column: end.column + 1,
           },
-        };
+        } as const;
+
         context.report({
           messageId: 'useTrackByFunction',
           loc,
         });
       },
-    });
+    };
   },
 });
+
+function hasNgForTrackBy(
+  source: Readonly<{ name: string; type: string }>[],
+): boolean {
+  return source.some(
+    ({ name, type }) => name === 'ngForTrackBy' && type === 'BoundAttribute',
+  );
+}
