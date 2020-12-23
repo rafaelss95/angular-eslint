@@ -17,39 +17,39 @@ ruleTester.run(RULE_NAME, rule, {
   valid: [
     // should pass if constructor does not exist
     `
-      class Test {
-        public foo(){}
-      }
+    class Test {
+      foo() {}
+    }
     `,
     // should pass if constructor exists but no parameter
     `
-      class Test {
-        constructor() {}
-      }
+    class Test {
+      constructor() {}
+    }
     `,
     // should pass if constructor exists and have one parameter without decorator
     `
-      class Test {
-        constructor(foo: any) {}
-      }
-    `,
+    class Test {
+      constructor(foo: string) {}
+    }
+  `,
     // should pass if constructor exists and have one parameter with decorator
     `
-      class Test {
-        constructor(@Optional() foo: any) {}
-      }
+    class Test {
+      constructor(@Optional() foo: string) {}
+    }
     `,
     // // should pass if constructor exists and have multiple parameters without decorator
     `
-      class Test {
-        constructor(foo: any, @Optional() bar: any) {}
-      }
+    class Test {
+      constructor(foo: string, @Optional() bar: string) {}
+    }
     `,
     // // should pass if constructor exists and have multiple parameters with decorator
     `
-      class Test {
-        constructor(@Optional() foo: any, @Optional() bar: any) {}
-      }
+    class Test {
+      constructor(@Optional() foo: string, @Optional() bar: string) {}
+    }
     `,
   ],
   invalid: [
@@ -57,68 +57,47 @@ ruleTester.run(RULE_NAME, rule, {
       description:
         'should fail if constructor has one parameter with @Attribute decorator',
       annotatedSource: `
-      class Test {
-        constructor(@Attribute() foo: any) {}
-                                 ~~~~~~~~
-      }
-    `,
+        class Test {
+          constructor(@Attribute() foo: string) {}
+                      ~~~~~~~~~~~~
+        }
+      `,
       messageId,
     }),
-
     convertAnnotatedSourceToFailureCase({
       description:
-        'should fail if constructor has one parameter with @Attribute decorator',
+        'should fail if constructor has one parameter with an alias on the @Attribute decorator',
       annotatedSource: `
-      class Test {
-        constructor(@Attribute("name") foo: any) {}
-                                       ~~~~~~~~
-      }
-    `,
+        class Test {
+          constructor(@Attribute("name") foo: string) {}
+                      ~~~~~~~~~~~~~~~~~~
+        }
+      `,
       messageId,
     }),
-
     convertAnnotatedSourceToFailureCase({
       description:
         'should fail if constructor has multiple parameters but one with @Attribute decorator',
       annotatedSource: `
-      class Test {
-        constructor(foo: any, @Attribute() bar: any) {}
-                                           ~~~~~~~~
-      }
-    `,
+        class Test {
+          constructor(foo: string, @Attribute() bar: string, @Host() @Self() @SkipSelf() @Optional() baz: string) {}
+                                   ~~~~~~~~~~~~
+        }
+      `,
       messageId,
     }),
-
     convertAnnotatedSourceToFailureCase({
       description:
-        'should fail if constructor has multiple parameters but one with @Attribute decorator',
+        'should fail if constructor has multiple parameters with @Attribute decorator',
       annotatedSource: `
-      class Test {
-        constructor(@Optional() foo: any, @Attribute() bar: any) {}
-                                                       ~~~~~~~~
-      }
-    `,
-      messageId,
-    }),
-
-    convertAnnotatedSourceToFailureCase({
-      description: `should fail if constructor has multiple parameters
-      and all with @Attribute decorator`,
-      annotatedSource: `
-      class Test {
-        constructor(@Attribute() foo: any, @Attribute() bar: any) {}
-                                 ~~~~~~~~               ^^^^^^^^
-      }
-    `,
+        class Test {
+          constructor(@Attribute() foo: string, @Attribute() bar: string) {}
+                      ~~~~~~~~~~~~              ^^^^^^^^^^^^
+        }
+      `,
       messages: [
-        {
-          char: '~',
-          messageId: messageId,
-        },
-        {
-          char: '^',
-          messageId: messageId,
-        },
+        { char: '~', messageId },
+        { char: '^', messageId },
       ],
     }),
   ],
