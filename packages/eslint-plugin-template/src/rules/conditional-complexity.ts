@@ -39,7 +39,7 @@ export default createESLintRule<Options, MessageIds>({
     ],
     messages: {
       conditionalСomplexity:
-        'The condition complexity "{{totalComplexity}}" exceeds the defined limit "{{maxComplexity}}"',
+        'The conditional complexity "{{totalComplexity}}" exceeds the allowed limit "{{maxComplexity}}"',
     },
   },
   defaultOptions: [{ maxComplexity: 5 }],
@@ -47,10 +47,7 @@ export default createESLintRule<Options, MessageIds>({
     const parserServices = getTemplateParserServices(context);
 
     return {
-      'BoundAttribute[name="ngIf"]'({
-        sourceSpan,
-        value,
-      }: TmplAstBoundAttribute) {
+      BoundAttribute({ sourceSpan, value }: TmplAstBoundAttribute) {
         const totalComplexity = getTotalComplexity(value as ASTWithSource);
 
         if (totalComplexity <= maxComplexity) return;
@@ -70,7 +67,7 @@ export default createESLintRule<Options, MessageIds>({
 let parser: Parser | null = null;
 // Instantiate the `Parser` class lazily only when this rule is applied.
 function getParser(): Parser {
-  return parser || (parser = new Parser(new Lexer()));
+  return parser ?? (parser = new Parser(new Lexer()));
 }
 
 function getTotalComplexity({ source }: ASTWithSource): number {
@@ -89,9 +86,7 @@ function getTotalComplexity({ source }: ASTWithSource): number {
   while (conditions.length > 0) {
     const condition = conditions.pop()!;
 
-    if (!condition.operation) {
-      continue;
-    }
+    if (!condition.operation) continue;
 
     if (condition.left instanceof Binary) {
       totalComplexity++;

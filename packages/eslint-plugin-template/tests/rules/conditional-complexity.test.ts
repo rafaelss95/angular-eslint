@@ -100,5 +100,16 @@ ruleTester.run(RULE_NAME, rule, {
         </ng-template>
       `,
     }),
+    convertAnnotatedSourceToFailureCase({
+      messageId,
+      description:
+        'should fail with a higher level of complexity using [class] binding',
+      annotatedSource: `
+        <div [class.px-4]="a <= b || (b > c && c >= d && d < e)">
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          Content
+        </div>
+      `,
+    }),
   ],
 });
