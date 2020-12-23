@@ -415,7 +415,7 @@ If you are still having problems after you have done some digging into these, fe
 | [`prefer-on-push-component-change-detection`]   | :white_check_mark: |
 | [`template-accessibility-alt-text`]             | :white_check_mark: |
 | [`template-accessibility-elements-content`]     | :white_check_mark: |
-| [`template-accessibility-label-for`]            |                    |
+| [`template-accessibility-label-for`]            | :white_check_mark: |
 | [`template-accessibility-tabindex-no-positive`] | :white_check_mark: |
 | [`template-accessibility-table-scope`]          | :white_check_mark: |
 | [`template-accessibility-valid-aria`]           | :white_check_mark: |
@@ -528,7 +528,6 @@ If you are still having problems after you have done some digging into these, fe
 
 <!-- PR Links -->
 
-[`pr233`]: https://api.github.com/repos/angular-eslint/angular-eslint/pulls/233
 [`pr260`]: https://api.github.com/repos/angular-eslint/angular-eslint/pulls/260
 
 <!-- end rule list -->
